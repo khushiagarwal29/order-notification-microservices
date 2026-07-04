@@ -1,9 +1,10 @@
 package com.example.OrderService.service;
 
-import com.example.OrderService.client.NotificationClient;
 import com.example.OrderService.dto.OrderRequest;
 import com.example.OrderService.dto.OrderResponse;
+import com.example.OrderService.event.OrderCreatedEvent;
 import com.example.OrderService.exception.OrderNotFoundException;
+import com.example.OrderService.kafka.OrderEventProducer;
 import com.example.OrderService.model.Order;
 import com.example.OrderService.model.OrderStatus;
 import com.example.OrderService.repository.OrderRepository;
@@ -21,7 +22,7 @@ import java.util.UUID;
 public class OrderService {
 
     private final OrderRepository orderRepository;
-    private final NotificationClient notificationClient;
+    private final OrderEventProducer orderEventProducer;
 
     @Transactional
     public OrderResponse createOrder(OrderRequest req) {
@@ -33,21 +34,17 @@ public class OrderService {
         log.info("Saving order into PostgreSQL...");
         order = orderRepository.save(order);
 
-        log.info("Order {} saved successfully.", order.getId());
+        OrderCreatedEvent event = new OrderCreatedEvent(
+                order.getCustomerName(),
+                order.getProduct(),
+                order.getQuantity(),
+                order.getTotalPrice()
+        );
 
-        try {
-            log.info("Calling Notification Service...");
+        orderEventProducer.publish(event);
 
-            notificationClient.sendOrderCreatedNotification(order);
+        order.setStatus(OrderStatus.NOTIFIED);
 
-            log.info("Notification Service completed.");
-
-            order.setStatus(OrderStatus.NOTIFIED);
-        } catch (Exception e) {
-            // This catch block IS your design narrative — call it out explicitly
-            log.error("Notification failed for order {}: {}", order.getId(), e.getMessage());
-            order.setStatus(OrderStatus.NOTIFICATION_FAILED);
-        }
         orderRepository.save(order);
 
         return toResponse(order);
