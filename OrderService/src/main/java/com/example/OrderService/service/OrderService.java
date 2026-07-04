@@ -11,6 +11,7 @@ import com.example.OrderService.repository.OrderRepository;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -50,7 +51,9 @@ public class OrderService {
         return toResponse(order);
     }
 
+    @Cacheable(value = "orders", key = "#id")
     public OrderResponse getOrder(UUID id) {
+        log.info("Fetching order {} from PostgreSQL...", id);
         return orderRepository.findById(id)
                 .map(this::toResponse)
                 .orElseThrow(() -> new OrderNotFoundException(id));
