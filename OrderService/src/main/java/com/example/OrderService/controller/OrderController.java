@@ -36,4 +36,17 @@ public class OrderController {
     public List<OrderResponse> list() {
         return orderService.listOrders();
     }
+
+    @PutMapping("/{id}")
+    public OrderResponse update(
+            @PathVariable UUID id,
+            @RequestBody OrderRequest request) {
+
+        return orderService.updateOrder(id, request);
+    }
+
+    @DeleteMapping("/{id}")
+    public void delete(@PathVariable UUID id) {
+        orderService.deleteOrder(id);
+    }
 }
