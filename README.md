@@ -1,12 +1,14 @@
 # Order Notification Microservices
 
-This project is a simple microservices application built using Spring Boot. The goal of this project is to understand how multiple services communicate with each other and how a distributed system is designed.
+This project is a simple microservices application built using Spring Boot to demonstrate how multiple services communicate in a distributed system.
 
-The application uses synchronous REST APIs for client interactions and asynchronous communication between services using Apache Kafka. It also leverages Redis for caching and is deployed on an AWS EC2 instance.
+The application uses synchronous REST APIs for client interactions and asynchronous communication between services using Apache Kafka. Order data is stored in PostgreSQL, notifications are stored in MongoDB, and Redis is used to cache frequently accessed order data for improved performance. The application is containerized using Docker and deployed on an AWS EC2 instance.
 
-## Project Structure
+---
 
-```
+# Project Structure
+
+```text
 Microservices-Project
 │
 ├── OrderService
@@ -14,7 +16,9 @@ Microservices-Project
 └── docker-compose.yml
 ```
 
-## Technologies Used
+---
+
+# Technologies Used
 
 * Java 17
 * Spring Boot
@@ -29,58 +33,76 @@ Microservices-Project
 * Maven
 * Lombok
 
-## Services
+---
 
-### Order Service
+# Services
+
+## Order Service
 
 * Creates new orders.
 * Stores order details in PostgreSQL.
+* Caches frequently accessed order data in Redis.
 * Publishes order events to Apache Kafka.
 * Exposes REST APIs for order management.
 
-### Notification Service
+## Notification Service
 
 * Consumes order events from Apache Kafka.
 * Stores notifications in MongoDB.
-* Uses Redis for caching notification data.
-* Logs the notification as if it was sent successfully.
+* Logs the notification as successfully sent (simulated notification delivery).
 
-## Architecture
+---
 
+# Architecture
+
+```text
+                      REST API
+
+                         Client
+                            |
+                            v
+                   +------------------+
+                   |   Order Service  |
+                   +------------------+
+                     |             |
+                     |             |
+      Store Order    |             | Cache Order
+                     |             |
+                     v             v
+               PostgreSQL       Redis
+                     |
+                     | Publish Event
+                     v
+                Apache Kafka
+                     |
+                     | Consume Event
+                     v
+             +-----------------------+
+             | Notification Service  |
+             +-----------------------+
+                     |
+                     | Store Notification
+                     v
+                  MongoDB
 ```
-                REST API
 
-Client
-   |
-   v
-Order Service
-(PostgreSQL)
-   |
-   | Publish Event
-   v
-Apache Kafka
-   |
-   | Consume Event
-   v
-Notification Service
-(MongoDB)
-   |
-   v
-Redis
-```
+---
 
-## Request Flow
+# Request Flow
 
 1. Client sends a request to create an order.
-2. Order Service saves the order in PostgreSQL.
-3. Order Service publishes an event to Apache Kafka.
-4. Notification Service consumes the event.
-5. Notification Service stores the notification in MongoDB.
-6. Redis caches frequently accessed notification data.
+2. Order Service stores the order in PostgreSQL.
+3. Order Service caches the order in Redis.
+4. Order Service publishes an order event to Apache Kafka.
+5. Notification Service consumes the event.
+6. Notification Service stores the notification in MongoDB.
+7. Notification Service logs that the notification was successfully sent.
 
-## Running the Project
+---
 
-### 1. Start Docker containers
+# Running the Project
+
+## 1. Start Docker Containers
 
 ```bash
 docker compose up -d
@@ -93,7 +115,9 @@ This starts:
 * Apache Kafka
 * Redis
 
-### 2. Start Notification Service
+---
+
+## 2. Start Notification Service
 
 ```bash
 cd NotificationService
@@ -106,7 +130,9 @@ Notification Service runs on:
 http://localhost:8082
 ```
 
-### 3. Start Order Service
+---
+
+## 3. Start Order Service
 
 ```bash
 cd OrderService
@@ -119,9 +145,11 @@ Order Service runs on:
 http://localhost:8081
 ```
 
-## API Endpoints
+---
 
-### Create Order
+# API Endpoints
+
+## Create Order
 
 ```
 POST /api/orders
@@ -138,47 +166,55 @@ Sample Request
 }
 ```
 
-### Get Order
+---
+
+## Get Order
 
 ```
 GET /api/orders/{id}
 ```
 
-### Get All Orders
+Returns the order by its ID. If available, the Order Service first attempts to retrieve the order from Redis before querying PostgreSQL.
+
+---
+
+## Get All Orders
 
 ```
 GET /api/orders
 ```
 
-## Current Status
+Returns all orders stored in PostgreSQL.
 
--> Order Service
+---
 
--> Notification Service
+# Current Status
 
--> PostgreSQL Integration
+* ✅ Order Service
+* ✅ Notification Service
+* ✅ PostgreSQL Integration
+* ✅ MongoDB Integration
+* ✅ Redis Integration (Order Cache)
+* ✅ Apache Kafka Integration
+* ✅ Event-driven communication using Kafka
+* ✅ Docker Compose
+* ✅ AWS EC2 Deployment
 
--> MongoDB Integration
+---
 
--> Apache Kafka Integration
+# Future Enhancements
 
--> Redis Integration
+The project will be extended with production-ready features, including:
 
--> Docker Compose
-
--> AWS EC2 Deployment
-
--> Event-driven communication using Kafka
-
-## Next Steps
-
-I plan to improve this project step by step by adding:
-
-* Retry mechanism
+* Retry mechanism for failed message processing
 * Dead Letter Queue (DLQ)
 * Circuit Breaker using Resilience4j
 * Distributed Tracing
-* Prometheus & Grafana monitoring
-* Kubernetes deployment
+* Prometheus & Grafana Monitoring
+* Kubernetes Deployment
+* API Gateway
+* Service Discovery
+* Centralized Configuration
+* Authentication & Authorization (JWT)
 
-The idea is to gradually evolve this project into a production-style distributed system by incorporating advanced reliability, observability, and scalability features.
+The goal is to evolve this project into a production-style distributed microservices system by incorporating advanced reliability, observability, scalability, and fault-tolerance patterns.
